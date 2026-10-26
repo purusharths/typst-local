@@ -1,0 +1,22 @@
+[project]
+name = "typst-server"
+version = "0.1.0"
+description = "Interactive, real-time, web-based Typst editor and compiler"
+readme = "README.md"
+authors = [
+    { name = "Purusharth Saxena", email = "purusharth.sa@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.162.0",
+    "python-multipart>=0.0.32",
+    "typst>=0.15.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+typst-server = "typst_server:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
