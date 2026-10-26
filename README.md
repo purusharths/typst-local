@@ -1,36 +1,65 @@
 # typst-server
 
-A small self-hosted, real-time Typst editor in the browser. Think typst.app, but local, single-user, no auth.
+A self-hosted Typst editor in the browser with a live preview, like typst.app but running on your own machine. It has no accounts and no cloud.
 
-- Projects are folders under `~/Documents/typst-files/<project>/`, each with a `main.typ` entry point.
-- Edits are saved to disk and compiled in-process with [typst-py](https://github.com/messense/typst-py) (incremental), so the preview updates as you type.
-- Preview is rendered as SVG pages. Errors show line:column diagnostics via the `typst` CLI if installed.
-- Landing page lists projects; new projects are scaffolded as an A4 paper:
-  - `main.typ` — just the content: `#show: paper`, `#include "abstract.typ"`, sections, `#bibliography`.
-  - `housekeeping.typ` — title, author, institution, email, date, plus page/text setup and the title block. Empty fields (`""`) are not rendered.
-  - `abstract.typ`, `refs.bib` (dummy entries), and an empty `figures/` folder (drop images onto it in the sidebar).
-- CodeMirror 6 editor with Typst highlighting, file sidebar, upload / drag-and-drop for assets, PDF export.
-- PDF button opens the compiled PDF in a tab; ⬇ downloads it. 📁 buttons (project, each file, landing cards) open the folder in the file manager on the machine running the server; the full path is shown in the sidebar and copies on click.
-- Light theme by default, dark toggle (◐). The PDF preview can be hidden per file ("hide pdf"); the choice is remembered in the browser.
+## Requirements
+
+- [uv](https://docs.astral.sh/uv/) (installs Python 3.14 and the dependencies)
+- Optional: the `typst` CLI on your `PATH`, for line and column numbers in error messages
 
 ## Run
 
 ```sh
-uv run typst-server            # http://0.0.0.0:8000  (reachable on your LAN)
-uv run typst-server --port 9000 --host 127.0.0.1
+uv run typst-server
 ```
 
-Set `TYPST_FILES=/some/dir` to change where projects live. `TYPST_TEMPLATES` and `TYPST_TEMPLATE` point at a different templates folder or template name.
+Open <http://localhost:8000>. The server listens on all interfaces, so other devices on your network can use it too.
 
-## Layout
+```sh
+uv run typst-server --host 127.0.0.1 --port 9000   # local only, different port
+```
 
-- `src/typst_server/app.py` — FastAPI app: REST for projects/files, websocket `/ws/<project>` for live compile.
-- `src/typst_server/config.py` — paths, allowed file types, project-name rule, compile debounce.
-- `src/typst_server/templates/paper/` — the files copied into every new project. Edit them directly; `{{title}}` is replaced with the project name. Empty folders need a `.gitkeep`, which is not copied.
-- `src/typst_server/static/` — frontend (`index.html`, `app.js`, `style.css`) plus the prebuilt CodeMirror bundle in `vendor/`.
-- `web/` — only needed to rebuild the CodeMirror bundle: `cd web && npm install && npm run build`. `node e2e.mjs` runs a headless Chrome smoke test against a server on port 8765 with a project named `Paper`.
+## Usage
 
-## Notes
+- The start page lists your projects. Click **+ New project** to create one.
+- Each project is a folder in `~/Documents/typst-files/`. The document is compiled from `main.typ`.
+- Type in the editor and the preview updates as you go. Errors appear under the preview.
+- **PDF** opens the compiled document in a new tab, and **⬇** downloads it.
+- In the file sidebar, **+** adds a file and **⇧** uploads one. You can also drag files onto the sidebar or onto a folder.
+- 📁 opens a project or file location in your file manager.
+- **hide pdf** hides the preview for the current file, and ◐ toggles dark mode.
 
-- No authentication. Anyone on your network can read, edit and delete projects. Bind to `127.0.0.1` if that is a concern.
-- One editor per project; two tabs editing the same file will overwrite each other (KISS for now).
+New projects start from an A4 paper template:
+
+| File | Contents |
+| --- | --- |
+| `main.typ` | The body text only |
+| `housekeeping.typ` | Title, author, date and page setup. Set a field to `""` to hide it. |
+| `abstract.typ` | The abstract |
+| `refs.bib` | Bibliography entries |
+| `figures/` | Images |
+
+## Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `TYPST_FILES` | `~/Documents/typst-files` | Where projects are stored |
+| `TYPST_TEMPLATE` | `paper` | Template used for new projects |
+| `TYPST_TEMPLATES` | `src/typst_server/templates` | Folder containing the templates |
+
+To change the default project, edit the files in `src/typst_server/templates/paper/`. The text `{{title}}` is replaced with the project name. Other settings are in `src/typst_server/config.py`.
+
+## Development
+
+- `src/typst_server/app.py` holds the backend, built with FastAPI.
+- `src/typst_server/static/` holds the frontend.
+- `web/` is only needed to rebuild the bundled CodeMirror editor:
+
+```sh
+cd web && npm install && npm run build
+```
+
+## Caveats
+
+- There is no authentication. Anyone who can reach the port can read, edit and delete projects.
+- Opening the same file in two tabs at once makes them overwrite each other.
